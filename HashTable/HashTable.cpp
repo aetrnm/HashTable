@@ -1,55 +1,155 @@
-#include <iostream>
+﻿#include <iostream>
 #include <typeinfo>
 
 using namespace std;
 
+int filledCells = 0;
+
 class HashTable
 {
-    const static int tableSize = 1000;
+    static const int primeNumbersList[7];
+    int tableSize;
+    string* table;
+    hash<string> hasher = hash<string>();
 
-    string table[tableSize] = { "" };
+private:
+    int currentSizeIndex = 0;
+
+    void resize() 
+    {
+        string* oldTable = table;
+        int oldTableSize = tableSize;
+        currentSizeIndex++;
+        tableSize = primeNumbersList[currentSizeIndex];
+        table = new string[tableSize];
+        rehash(oldTable, oldTableSize);
+        delete[] oldTable;
+    }
+
+    void rehash(string* oldTable, int oldTableSize) 
+    {
+        for(int i = 0; i < oldTableSize; i++)
+        {
+            if (oldTable[i] != "") 
+            {
+                this->add(oldTable[i]);
+            }
+        }
+    }
 
 public:
 
     //Constructor
     HashTable()
     {
-        for (int i = 0; i < 1000; i++)
+        tableSize = primeNumbersList[0];
+        //delete[] table;
+        table = new string[tableSize];
+        for (int i = 0; i < tableSize; i++)
         {
             table[i] = "";
         }
     }
 
+    int hash1(string s) {
+        return hasher(s) % tableSize;
+    }
+
+    int hash2(string s) {
+        return hasher(s + "#") % tableSize;
+    }
+    
     void add(string s)
     {
-        int hashCode = hash<string>()(s)%tableSize;
-        table[hashCode] = s;
+        if (filledCells / tableSize * 100 >= 70) 
+        {
+            resize();
+        }
+        if (this->find(s)) //this - find будет вызван от объекта от которого вызывался add
+        { 
+            return;
+        }
+        for (int i = 0; true; i++) 
+        {
+            int hash = (hash1(s) + i*hash2(s))%tableSize;
+            if (table[hash] == "") 
+            {
+                table[hash] = s;
+                filledCells++;
+                break;
+            }
+        }
     }
 
     bool find(string s)
     {
-        int hashCode = hash<string>()(s) % tableSize;
-        if (table[hashCode] != "")
+        for (int i = 0; true; i++) 
         {
-            return true;
+            int hash = (hash1(s) + i * hash2(s)) % tableSize;
+            if (table[hash] != "" && table[hash] == s)
+            {
+                return true;
+            }
+            else if (table[hash] == "") 
+            {
+                return false;
+            }
         }
-        return false;
     }
 
     void remove(string s)
     {
-        int hashCode = hash<string>()(s) % tableSize;
-        if (table[hashCode] != "")
+        for (int i = 0; true; i++) 
         {
-            table[hashCode] = "";
+            int hash = (hash1(s) + i * hash2(s)) % tableSize;
+            if (table[hash] != "" && table[hash] == s) 
+            {
+                table[hash] = "";
+            }
+            else if (table[hash] == "") 
+            {
+                throw runtime_error("remove(): no such element");
+            }
         }
     }
 
+    void printTable() 
+    {
+        for (int i = 0; i < tableSize; i++) 
+        {
+            printf("{%d} ", i);
+            cout << table[i] << endl;
+        }
+        cout << endl;
+    }
 };
+
+const int HashTable::primeNumbersList[7] = { 11, 103, 1009, 10007, 100003, 1000003, 10000019};
 
 int main()
 {
     HashTable table = HashTable();
-    table.add("qwerty");
-    cout << table.find("qwety") << endl;
+    //table.printTable();
+    int start = clock();
+    table.add("cat");
+    //table.printTable();
+    table.add("dog");
+    //table.printTable();
+    table.add("horse");
+    //table.printTable();
+    table.add("cat");
+    //table.printTable();
+    int finish = clock();
+    cout << "Time spent: " << finish - start << endl;
+    try 
+    {
+        table.remove("ashsa");
+    }
+    catch (const exception& e)
+    {
+        cout << "Error: " << e.what() << endl;
+    }
+    cout << table.find("dog") << endl;
+    cout << table.find("dolphin") << endl;
+
 }
