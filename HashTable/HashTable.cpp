@@ -1,9 +1,11 @@
 ﻿#include <iostream>
 #include <typeinfo>
+#include "windows.h"
+#include <ctime>
+#include <chrono>
+typedef std::chrono::high_resolution_clock Clock;
 
 using namespace std;
-
-int filledCells = 0;
 
 class HashTable
 {
@@ -11,6 +13,7 @@ class HashTable
     int tableSize;
     string* table;
     hash<string> hasher = hash<string>();
+    int filledCells = 0;
 
 private:
     int currentSizeIndex = 0;
@@ -30,7 +33,7 @@ private:
     {
         for(int i = 0; i < oldTableSize; i++)
         {
-            if (oldTable[i] != "") 
+            if (!oldTable[i].empty()) 
             {
                 this->add(oldTable[i]);
             }
@@ -43,7 +46,6 @@ public:
     HashTable()
     {
         tableSize = primeNumbersList[0];
-        //delete[] table;
         table = new string[tableSize];
         for (int i = 0; i < tableSize; i++)
         {
@@ -86,11 +88,11 @@ public:
         for (int i = 0; true; i++) 
         {
             int hash = (hash1(s) + i * hash2(s)) % tableSize;
-            if (table[hash] != "" && table[hash] == s)
+            if (!table[hash].empty() && table[hash] == s)
             {
                 return true;
             }
-            else if (table[hash] == "") 
+            if (table[hash].empty()) 
             {
                 return false;
             }
@@ -102,11 +104,11 @@ public:
         for (int i = 0; true; i++) 
         {
             int hash = (hash1(s) + i * hash2(s)) % tableSize;
-            if (table[hash] != "" && table[hash] == s) 
+            if (!table[hash].empty() && table[hash] == s) 
             {
                 table[hash] = "";
             }
-            else if (table[hash] == "") 
+            else if (table[hash].empty()) 
             {
                 throw runtime_error("remove(): no such element");
             }
@@ -129,18 +131,15 @@ const int HashTable::primeNumbersList[7] = { 11, 103, 1009, 10007, 100003, 10000
 int main()
 {
     HashTable table = HashTable();
-    //table.printTable();
-    int start = clock();
+	
+    const auto t1 = Clock::now();
+	
     table.add("cat");
-    //table.printTable();
     table.add("dog");
-    //table.printTable();
     table.add("horse");
-    //table.printTable();
     table.add("cat");
-    //table.printTable();
-    int finish = clock();
-    cout << "Time spent: " << finish - start << endl;
+    const auto t2 = Clock::now();
+	
     try 
     {
         table.remove("ashsa");
@@ -149,7 +148,8 @@ int main()
     {
         cout << "Error: " << e.what() << endl;
     }
-    cout << table.find("dog") << endl;
-    cout << table.find("dolphin") << endl;
+	
 
+    cout << "Time spent: " << chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count()
+        << " nanoseconds" << endl;
 }
